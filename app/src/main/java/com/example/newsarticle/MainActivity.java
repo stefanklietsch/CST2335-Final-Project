@@ -1,3 +1,9 @@
+/*
+* Created By: Zachary Holmes
+* Created for: CST2335 Mobile graphics
+* Created on:  March 27,2020
+* Description: Looks thorugh a server and dis plays values
+* */
 package com.example.newsarticle;
 
 import android.content.Context;
@@ -6,12 +12,18 @@ import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
 
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
+import android.widget.Toolbar;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -38,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
     String wurl = null;
     String Section = null;
     MyListAdapter adpt;
+    Toolbar tbar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,11 +61,13 @@ public class MainActivity extends AppCompatActivity {
         search = findViewById(R.id.search);
         aList = findViewById(R.id.list);
         objects = new ArrayList<Message>();
+        tbar = findViewById(R.id.toolbar);
         searchsite req = new searchsite();
         adpt = new MyListAdapter(objects,this);
         aList.setAdapter(adpt);
         s = etext.getText().toString();
 
+        setActionBar(tbar);
         search.setOnClickListener(clk -> {
             req.execute("https://content.guardianapis.com/search?api-key=1fb36b70-1588-4259-b703-2570ea1fac6a&q=Tesla");
             Toast.makeText(this,"search in progress",Toast.LENGTH_LONG);
@@ -82,11 +97,13 @@ public class MainActivity extends AppCompatActivity {
         });
     }
     private class searchsite extends AsyncTask<String,Void, List<Message>> {
+        //this displays everythinkg on listView
         @Override
         protected void onPostExecute(List<Message> result) {
             adpt.setItemList(result);
             adpt.notifyDataSetChanged();
         }
+        //this searches through server
         @Override
         protected List<Message> doInBackground(String... args) {
             List<Message> lMessage = new ArrayList<>();
@@ -126,5 +143,35 @@ public class MainActivity extends AppCompatActivity {
 
             return new Message(title,Section,wurl);
         }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater minflater = getMenuInflater();
+        minflater.inflate(R.menu.toolitems,menu);
+        return true;
+    }
+
+    // this will set the buton to show what needs to be done
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        switch (item.getItemId()){
+            case R.id.question:
+                AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+                alertDialogBuilder.setTitle("info")
+
+                        //What is the message:
+                        .setMessage("step 1: type what you are looking fo \n " +
+                                "step 2 hit search button \n" +
+                                "step 3 hold item you want to save to save item")
+
+                        //what the Yes button does:
+                        .setPositiveButton("done", (click, arg) -> {
+
+                        })
+                        //Show the dialog
+                        .create().show();
+        }
+        return true;
     }
 }
