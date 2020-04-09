@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">newsarticle</string>
+    <string name="intro">Hello welcome to gaurdion newarticle</string>
+    <string name="question">What are you looking for: </string>
+    <string name="answer">type here</string>
+</resources>

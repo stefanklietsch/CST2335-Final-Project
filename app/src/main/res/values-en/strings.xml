@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">newsarticle</string>
+    <string name="intro">Bonjoir welcome to gaurdion newarticle</string>
+    <string name="question">What is it you are looking for: </string>
+    <string name="answer">here type</string>
+</resources>

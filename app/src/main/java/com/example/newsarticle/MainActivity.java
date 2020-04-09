@@ -1,30 +1,31 @@
 package com.example.newsarticle;
 
-import androidx.appcompat.app.AppCompatActivity;
-
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.BaseAdapter;
+
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.ProgressBar;
-import android.widget.TextView;
+import android.widget.Toast;
 
-import org.w3c.dom.Text;
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserFactory;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     EditText etext;
@@ -32,13 +33,11 @@ public class MainActivity extends AppCompatActivity {
     Button search;
     ListView aList;
     String s = null;
-    MyListAdapter myAdapter;
-    ArrayList<Message> objects = new ArrayList<>();
-    String strurl = "https://content.guardianapis.com/search?api-key=1fb36b70-1588-4259-b703-2570ea1fac6a&q=Tesla";
+    ArrayList<Message> objects;
     String title = null;
-    String Url = null;
+    String wurl = null;
     String Section = null;
-    int sectionid= 0;
+    MyListAdapter adpt;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,102 +47,84 @@ public class MainActivity extends AppCompatActivity {
         sprogress = findViewById(R.id.progress);
         search = findViewById(R.id.search);
         aList = findViewById(R.id.list);
+        objects = new ArrayList<Message>();
         searchsite req = new searchsite();
-
-        DatabaseHelper dbOpener = new DatabaseHelper(this);
-        objects = dbOpener.getAllMessage();
-
-        myAdapter = new MyListAdapter();
-        aList.setAdapter(myAdapter);
+        adpt = new MyListAdapter(objects,this);
+        aList.setAdapter(adpt);
+        s = etext.getText().toString();
 
         search.setOnClickListener(clk -> {
-            s = etext.getText().toString();
-            req.execute();
-            Message message = new Message(title,sectionid,Section,"",0);
-            message.setId(dbOpener.insert(message));
-            objects.add(message);
-            myAdapter.notifyDataSetChanged();
+            req.execute("https://content.guardianapis.com/search?api-key=1fb36b70-1588-4259-b703-2570ea1fac6a&q=Tesla");
+            Toast.makeText(this,"search in progress",Toast.LENGTH_LONG);
+        });
+        aList.setOnItemLongClickListener( (p, b, pos, id) -> {
+            AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+            alertDialogBuilder.setTitle("A title")
 
+                    //What is the message:
+                    .setMessage("Do you want to save this?")
+
+                    //what the Yes button does:
+                    .setPositiveButton("Yes", (click, arg) -> {
+                        String temp = objects.get(pos).toString();
+
+                        Intent intent = new Intent(MainActivity.this,save.class);
+
+                        intent.putExtra("citem",temp);
+                        startActivity(intent);
+                    })
+                    //What the No button does:
+                    .setNegativeButton("No", (click, arg) -> { })
+
+                    //Show the dialog
+                    .create().show();
+            return true;
         });
     }
-    private class searchsite extends AsyncTask< String, Integer, String>
-    {
+    private class searchsite extends AsyncTask<String,Void, List<Message>> {
         @Override
-        protected String doInBackground(String... args) {
+        protected void onPostExecute(List<Message> result) {
+            adpt.setItemList(result);
+            adpt.notifyDataSetChanged();
+        }
+        @Override
+        protected List<Message> doInBackground(String... args) {
+            List<Message> lMessage = new ArrayList<>();
             try {
-
-                //create a URL object of what server to contact:
-                URL url = new URL(strurl);
-
-                //open the connection
+                //connects to server
+                URL url = new URL(args[0]);
                 HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.setRequestMethod("GET");
-                urlConnection.connect();
 
-                //wait for data:
+                //wait for data imput
                 InputStream response = urlConnection.getInputStream();
-
                 BufferedReader reader = new BufferedReader(new InputStreamReader(response, "UTF-8"), 8);
                 StringBuilder sb = new StringBuilder();
 
-                if(response.equals(s)) {
-                    String line = null;
-                    while ((line = reader.readLine()) != null) {
-                        sb.append(line + "\n");
-                    }
-                    String result = sb.toString();
+                String line = null;
+                while ((line = reader.readLine()) != null)
+                {
+                    sb.append(line + "\n");
                 }
+                String result = sb.toString(); //result is the whole string
+                JSONObject jObject = new JSONObject(result);
 
-
-
-            }
-            catch (Exception e)
-            {
-                Log.e("Error", e.getMessage());
+                JSONObject jstart = jObject.getJSONObject("response");
+                JSONArray jArray = jstart.getJSONArray("results");
+                for(int i = 0;i<jArray.length();i++){
+                    lMessage.add(convertNews(jArray.getJSONObject(i)));
+                }
+                return lMessage;
+            } catch (Exception e) {
+                e.printStackTrace();
             }
             return null;
         }
-    }
-    String streamToString(InputStream stream) throws IOException {
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(stream));
-        String line;
-        String result = "";
-        while ((line = bufferedReader.readLine()) != null) {
-            result += line;
-        }
+        private Message convertNews (JSONObject jo) throws JSONException{
+            title = jo.getString("webTitle");
+            Section = jo.getString("sectionName");
+            wurl = jo.getString("webUrl");
 
-        // Close stream
-        if (stream != null) {
-            stream.close();
-        }
-        return result;
-    }
-
-    private class MyListAdapter extends BaseAdapter {
-
-        public int getCount() {  return objects.size();  } //This function tells how many objects to show
-
-        public Message getItem(int position) { return objects.get(position);  }  //This returns the string at position p
-
-        public long getItemId(int p) { return p; } //This returns the database id of the item at position p
-
-        public View getView(int p, View recycled, ViewGroup parent)
-        {
-            View thisRow = null;
-            if (objects.get(p).getSectionID() == Message.SEARCH) {
-                thisRow = getLayoutInflater().inflate(R.layout.activity_main_search, null);
-            }
-
-            TextView title = thisRow.findViewById(R.id.text1);
-            title.setText(objects.get(p).getTitle());
-
-            TextView section = thisRow.findViewById(R.id.text2);
-            section.setText(objects.get(p).getSectionName());
-
-            TextView urls = thisRow.findViewById(R.id.text3);
-            urls.setText(objects.get(p).geturl());
-
-            return thisRow;
+            return new Message(title,Section,wurl);
         }
     }
 }
