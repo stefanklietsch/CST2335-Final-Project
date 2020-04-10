@@ -21,9 +21,8 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
-import android.widget.Toolbar;
+import androidx.appcompat.widget.Toolbar;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -67,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
         aList.setAdapter(adpt);
         s = etext.getText().toString();
 
-        setActionBar(tbar);
+        setSupportActionBar(tbar);
         search.setOnClickListener(clk -> {
             req.execute("https://content.guardianapis.com/search?api-key=1fb36b70-1588-4259-b703-2570ea1fac6a&q=Tesla");
             Toast.makeText(this,"search in progress",Toast.LENGTH_LONG);
@@ -154,7 +153,7 @@ public class MainActivity extends AppCompatActivity {
 
     // this will set the buton to show what needs to be done
     @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+    public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()){
             case R.id.question:
                 AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
